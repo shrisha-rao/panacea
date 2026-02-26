@@ -1,4 +1,4 @@
-# ![Alt Text](https://raw.githubusercontent.com/username/repo/main/icon.png)   Conditional Molecule Generation for Drug Discovery
+# <img src="https://github.com/shrisha-rao/panacea/blob/main/icon.png" width="29" /> Conditional Molecule Generation for Drug Discovery
 
 This repository implements a conditional graph variational autoencoder (GraphVAE) for generating novel drug molecules conditioned on disease representations. The model is trained on known drug–disease pairs and can generate candidate molecules for diseases with no known cures.
 
