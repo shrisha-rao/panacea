@@ -34,6 +34,24 @@ This repository implements a conditional graph variational autoencoder (GraphVAE
 ```
 
 ---
+## Rationale
+
+Generating novel drug candidates for diseases with no known treatments requires a model that can:
+1.  capture the complex structure of molecules
+2.  learn from known drug–disease associations
+3.  condition the generation on a disease representation. 
+
+**Conditional graph variational autoencoder (GraphVAE)** is choosen because:
+
+- **Graph representation** is natural for molecules (atoms as nodes, bonds as edges), preserving full structural information without lossy linearization (e.g., SMILES strings).  
+- **Conditional generation** allows the model to produce molecules tailored to a specific disease by incorporating a disease vector (e.g., protein embedding, disease ontology) into both encoder and decoder.  
+- **Variational framework** learns a smooth latent space where similar diseases map to nearby regions, enabling interpolation and generalization to unseen diseases.  
+- **Probabilistic nature** provides multiple candidate molecules per disease, which can be filtered and ranked by chemical properties and predicted activity.
+
+This approach balances expressiveness (graph neural networks), interpretability (latent space), and the ability to generate diverse, novel molecular structures, all essential for de novo drug design.
+
+
+---
 
 ## Methodology
 
