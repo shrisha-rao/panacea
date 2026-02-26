@@ -196,7 +196,6 @@ graph TD
 ## Project Structure
 
 ```
-create a bash script to generate this folder structure:
 conditional-molecule-generation/
 ├── config/                  # Configuration files (YAML)
 │   ├── data.yaml            # Dataset paths, disease embedding method
