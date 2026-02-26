@@ -12,6 +12,28 @@ This repository implements a conditional graph variational autoencoder (GraphVAE
 - Docker support for reproducible CPU/GPU environments.
 
 
+# Pipeline Summary
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Known drug-     │     │ Convert drugs   │     │ Create disease  │
+│ disease pairs   │────▶│ to PyG graphs   │────▶│ vectors         │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                          │
+                                                          ▼
+┌─────────────────┐     ┌────────────────-─┐     ┌─────────────────┐
+│ Generate for    │◀────│ Train conditional│◀────│ Assemble        │
+│ new disease     │     │ generative model │     │ dataset of pairs│
+└─────────────────┘     └────────────────-─┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Filter & rank   │────▶│ Validate with   │────▶│ Promising       │
+│ candidates      │     │ docking / ML    │     │ candidates      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+
+```
+
+
 
 ## Setup
 
@@ -45,6 +67,40 @@ This repository implements a conditional graph variational autoencoder (GraphVAE
    ```bash
    docker-compose run cpu python scripts/prepare_data.py --dataset hcdt --output data/raw/drug_disease_pairs.csv
    ```
+# Model Design (Conditional Graph Generative Model)
+
+```mermaid
+graph TD
+    A[Drug Graph] --> B[GNN Encoder]
+    C[Disease Vector] --> B
+    B --> D[Latent Code z]
+    D --> E[Graph Decoder]
+    C --> E
+    E --> F[Reconstructed Graph]
+```
+
+- Encoder: A GNN (e.g., GIN, GCN) that takes the drug graph and the disease vector (concatenated to node features or as a global graph attribute) and outputs a graph‑level embedding. Then two heads produce $\mu$ and $log(\sigma)$ for the latent Gaussian.
+
+- Decoder: A graph generator that takes z (sampled from the latent) and the disease vector to produce a new graph. This is the hardest part.
+	- Options:
+
+  		- Autoregressive decoder (like in GraphRNN) – generates nodes and edges step‑by‑step.
+
+  		- One‑shot decoder (like in GraphVAE) – predicts a probabilistic fully‑connected graph and then refines.
+
+  		- Fragment‑based decoder – assembles molecules from common fragments (more constrained, higher validity).
+
+- Loss: Reconstruction loss (e.g., cross‑entropy for node types and edges) + KL divergence.
+
+
+
+# Tools
+ - RDKit – for SMILES handling and molecule validation.
+ - PyTorch Geometric – for graph neural networks.
+ - PyTorch – base framework.
+ - Pre‑trained protein models – e.g., ESM (Meta).
+ - Disease ontologies – Disease Ontology, DisGeNET.
+ - Optional: TDC for evaluation metrics and predictors.
 
 ## Project Structure
 
