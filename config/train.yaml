@@ -1,0 +1,35 @@
+# Training configuration
+
+quick_run: false
+
+# Batch size
+batch_size: 32
+
+# Number of epochs
+epochs: 2 #100
+
+# Learning rate
+learning_rate: 0.001
+
+# Beta for KL annealing (optional)
+kl_beta: 1.0
+
+# Number of workers for dataloader
+num_workers: 2
+
+# Device (cuda or cpu)
+device: "cpu" # "cuda"
+
+# Path to save checkpoints
+checkpoint_dir: "checkpoints/"
+
+# Logging interval (steps)
+log_interval: 10
+
+# Validation interval (epochs)
+val_interval: 1
+
+# Whether to use learning rate scheduler
+use_scheduler: true
+scheduler_step_size: 30
+scheduler_gamma: 0.5

@@ -1,0 +1,25 @@
+# Model hyperparameters
+
+# Graph node feature dimensions (based on atom featurization)
+node_feature_dim: 36  # Example: one-hot atomic number (up to 10) + chirality + degree etc.
+
+# Disease vector dimension
+disease_dim: 128
+
+# Hidden dimension for GNN layers
+hidden_dim: 10 # 256
+
+# Latent dimension (z)
+latent_dim: 8 #64
+
+# Maximum number of nodes in a molecule (for padding in decoder)
+max_nodes: 100
+
+# Number of GNN layers in encoder
+num_encoder_layers: 3
+
+# GNN type: "gin", "gcn", "graphconv"
+gnn_type: "gin"
+
+# Dropout rate
+dropout: 0.1

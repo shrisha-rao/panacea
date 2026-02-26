@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  cpu:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cpu
+    volumes:
+      - ..:/workspace
+      # - ./data:/workspace/data
+      # - ./config:/workspace/config
+      # - ./checkpoints:/workspace/checkpoints
+      # - ./logs:/workspace/logs
+    command: python scripts/run_experiment.py
+    # Uncomment to override config
+    # environment:
+    #   - CUDA_VISIBLE_DEVICES=-1  # ensure CPU only
+
+  gpu:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
+    volumes:
+      - ./data:/workspace/data
+      - ./config:/workspace/config
+      - ./checkpoints:/workspace/checkpoints
+      - ./logs:/workspace/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: python scripts/run_experiment.py

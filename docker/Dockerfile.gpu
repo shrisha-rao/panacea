@@ -1,0 +1,33 @@
+# GPU-enabled Dockerfile (CUDA 11.3 base)
+FROM nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu20.04
+
+# Install Python 3.9 and system deps
+RUN apt-get update && apt-get install -y \
+    python3.9 \
+    python3-pip \
+    build-essential \
+    libopenbabel-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python alternatives
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1
+RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy GPU requirements
+COPY requirements-gpu.txt requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire project
+COPY . .
+
+# Set Python path
+ENV PYTHONPATH=/workspace
+
+# Default command
+CMD ["python", "scripts/run_experiment.py"]

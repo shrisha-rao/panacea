@@ -1,0 +1,25 @@
+# Data configuration
+
+# Path to the CSV file containing drug-disease pairs
+csv_path: "data/raw/drug_disease_pairs.csv"
+
+#"data/raw/small_drug_disease_pairs.csv"
+
+# Column names in the CSV
+smiles_column: "smiles"
+disease_id_column: "disease_id"
+
+# Disease embedding method: one of ["protein", "ontology", "learnable", "precomputed"]
+disease_embedding_method: "precomputed"
+
+# Path to precomputed disease vectors (if method is "precomputed")
+# Should be a dictionary saved as .pt file: {disease_id: tensor}
+disease_vector_path: "data/processed/disease_vectors.pt"
+
+# For learnable embeddings: number of diseases (must be known in advance)
+# Not needed if using precomputed
+num_diseases: 1000
+disease_embedding_dim: 128
+
+# For protein-based embedding: we might need a mapping file, but we'll keep it simple.
+# We'll assume precomputed for now.
