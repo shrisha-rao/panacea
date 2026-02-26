@@ -34,7 +34,7 @@ def main():
 
     # Prepare dataset
     dataset = DrugDiseaseDataset(
-        root='data/processed',
+        root='data', # /processed
         csv_path=data_config['csv_path'],
         disease_vector_path=data_config.get('disease_vector_path'),
         smiles_column=data_config['smiles_column'],
