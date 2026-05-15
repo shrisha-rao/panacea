@@ -1,0 +1,12 @@
+numpy<2
+torch
+torch-geometric
+rdkit-pypi
+pandas
+PyYAML
+tqdm
+scipy
+numpy
+matplotlib>=3.8
+openpyxl
+requests

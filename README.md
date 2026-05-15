@@ -128,6 +128,56 @@ To discover candidates for a new disease $\mathbf{d}_{\text{new}}$:
 
 ## Setup
 
+### One-command Colab proof of concept
+
+For the easiest Colab workflow, select a GPU runtime, mount Drive, install dependencies, and run the full pipeline command.
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+```bash
+git clone https://github.com/shrisha-rao/panacea.git
+cd panacea
+pip install -r requirements.txt
+```
+
+Smoke-test the whole graph-native pipeline before spending Colab credits on a full run:
+
+```bash
+python scripts/run_full_pipeline.py \
+  --mode smoke \
+  --drive-output-base /content/drive/MyDrive/panacea-runs
+```
+
+Run a configured proof-of-concept pipeline:
+
+```bash
+python scripts/run_full_pipeline.py \
+  --mode full \
+  --molecule-csv data/raw/molecules.csv \
+  --drug-disease-csv data/raw/drug_disease_pairs.csv \
+  --disease-vector-path data/processed/disease_vectors.pt \
+  --drive-output-base /content/drive/MyDrive/panacea-runs
+```
+
+Each run creates a new timestamped Google Drive folder, for example:
+
+```text
+/content/drive/MyDrive/panacea-runs/20260515-143022-full/
+├── checkpoints/
+├── candidates/
+├── configs/
+├── metrics/
+├── plots/
+├── reconstructions/
+├── manifest.json
+└── report.md
+```
+
+The smoke workflow uses tiny bundled sample data under `data/samples/`. Random disease vectors are supported for smoke/plumbing runs with `--allow-random-disease-vectors`, but those runs do not prove disease relevance.
+
 ### Option 1: Docker (recommended)
 
 1. **Clone the repository**:
@@ -240,7 +290,16 @@ conditional-molecule-generation/
 
 # Data Format
 
-The main CSV file should have at least two columns:
+Molecule-only graph training accepts a CSV with a `smiles` column:
+
+```text
+smiles
+CCO
+CC(=O)O
+c1ccccc1
+```
+
+Conditional drug-disease training accepts a CSV with at least two columns:
 
     smiles: SMILES string of the drug.
 
@@ -248,9 +307,18 @@ The main CSV file should have at least two columns:
 	
 	```text
 	smiles,disease_id
-	CC(C)CC1=CC=C(C=C1)C(C)C(=O)O,DOID:1234
-	CN1C=NC2=C1C(=O)N(C(=O)N2C)C,DOID:5678	
+ CC(C)CC1=CC=C(C=C1)C(C)C(=O)O,DOID:1234
+ CN1C=NC2=C1C(=O)N(C(=O)N2C)C,DOID:5678	
 	```
+
+Disease vectors must be saved as a PyTorch `.pt` dictionary:
+
+```python
+{
+    "DOID:1234": torch.Tensor(shape=[128]),
+    "DOID:5678": torch.Tensor(shape=[128]),
+}
+```
 	
 # Configuration
 
@@ -277,6 +345,22 @@ candidates = generate_for_disease(model, disease_vec, num_samples=1000)
 for smi, score in candidates[:10]:
     print(f"{smi}\t{score:.3f}")
 ```
+
+# Current Proof-of-Concept Scope
+
+The graph-native pipeline is staged intentionally:
+
+1. Molecule-only graph AE/VAE training validates reconstruction and graph decoding.
+2. Graph-to-RDKit decoding attempts to produce canonical SMILES and records invalid decodes instead of substituting dummy molecules.
+3. Disease-conditioned training runs after disease vectors are validated.
+4. Reports distinguish smoke/plumbing runs from meaningful disease-conditioned runs.
+
+Known limitations:
+
+- Graph decoding is conservative and may reject many generated graphs.
+- Random disease vectors are only for pipeline validation.
+- SELFIES/SMILES decoders are deferred to a future comparison phase.
+- Docking and wet-lab validation are out of scope for this proof of concept.
 
 # Extending the Code
 

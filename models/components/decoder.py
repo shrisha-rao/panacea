@@ -101,9 +101,10 @@ class GraphDecoder(nn.Module):
         for i in range(batch_size):
             true_graph = true_graphs[i]
             num_true_nodes = true_graph.x.size(0)
+            kept_nodes = min(num_true_nodes, max_nodes)
             # Pad true node features to max_nodes
             true_node_features = torch.zeros((max_nodes, self.node_feature_dim), device=device)
-            true_node_features[:num_true_nodes] = true_graph.x
+            true_node_features[:kept_nodes] = true_graph.x[:kept_nodes].to(device)
             # Build true adjacency (including bond types) of shape (max_nodes, max_nodes, num_edge_types)
             true_edge_attr = true_graph.edge_attr if hasattr(true_graph, 'edge_attr') else None
             edge_index = true_graph.edge_index

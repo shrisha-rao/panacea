@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from rdkit import Chem
 # from rdkit.Chem import QED, Descriptors, rdMolDescriptors
-from rdkit.Chem import AllChem, DataStructs
+from rdkit.Chem import AllChem, DataStructs, QED
 from typing import List, Dict, Optional
 import warnings
 
@@ -10,6 +10,8 @@ def compute_validity(smiles_list: List[str]) -> float:
     """Fraction of SMILES that are valid."""
     valid = 0
     for s in smiles_list:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol is not None:
             try:
@@ -23,6 +25,8 @@ def compute_uniqueness(smiles_list: List[str]) -> float:
     """Fraction of valid SMILES that are unique."""
     valid_smiles = []
     for s in smiles_list:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol is not None:
             try:
@@ -42,6 +46,8 @@ def compute_novelty(generated_smiles: List[str], known_smiles: List[str]) -> flo
     """
     known_set = set()
     for s in known_smiles:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol:
             try:
@@ -52,6 +58,8 @@ def compute_novelty(generated_smiles: List[str], known_smiles: List[str]) -> flo
     novel = 0
     total_valid = 0
     for s in generated_smiles:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol:
             try:
@@ -68,6 +76,8 @@ def average_qed(smiles_list: List[str]) -> float:
     """Average QED over valid molecules."""
     qeds = []
     for s in smiles_list:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol:
             try:
@@ -98,6 +108,8 @@ def diversity(smiles_list: List[str]) -> float:
     """
     valid_mols = []
     for s in smiles_list:
+        if not s:
+            continue
         mol = Chem.MolFromSmiles(s)
         if mol:
             try:

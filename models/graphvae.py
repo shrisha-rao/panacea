@@ -55,12 +55,13 @@ class ConditionalGraphVAE(BaseConditionalGenerator):
         graph: batch of PyG Data objects (list)
         disease_vec: (batch_size, disease_dim)
         """
-        batch_size = len(graph)
+        graph_list = graph.to_data_list() if hasattr(graph, 'to_data_list') else graph
+        batch_size = len(graph_list)
         # Pad graphs to max_nodes? Not needed; decoder expects max_nodes.
         node_features, edge_logits, mu, logvar = self.forward(graph, disease_vec)
         # Reconstruction loss using decoder's helper
         recon_loss = self.decoder.compute_reconstruction_loss(
-            node_features, edge_logits, graph, batch_size, self.max_nodes
+            node_features, edge_logits, graph_list, batch_size, self.max_nodes
         )
         # KL divergence
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch_size
@@ -75,6 +76,8 @@ class ConditionalGraphVAE(BaseConditionalGenerator):
         """
         if disease_vec.dim() == 1:
             disease_vec = disease_vec.unsqueeze(0)
+        if disease_vec.size(0) == 1 and num_samples > 1:
+            disease_vec = disease_vec.repeat(num_samples, 1)
         batch_size = disease_vec.size(0)
         # Sample z from prior N(0,1)
         z = torch.randn(batch_size, self.latent_dim, device=disease_vec.device)
