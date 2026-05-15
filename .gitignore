@@ -55,6 +55,7 @@ terraform/terraform.tfvars
 
 # Logs
 *.log
+runs/
 
 # Mac
 .DS_Store

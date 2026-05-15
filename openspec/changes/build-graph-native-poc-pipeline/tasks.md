@@ -13,7 +13,7 @@
 - [x] 2.2 Add or adapt a graph autoencoder/VAE model path that can train without disease conditioning.
 - [x] 2.3 Add a molecule-only training entrypoint with config support for smoke, autoencoder, and VAE modes.
 - [x] 2.4 Save molecule-only checkpoints and validation reconstruction samples.
-- [ ] 2.5 Verify molecule-only training completes at least one smoke-test epoch and writes expected artifacts.
+- [x] 2.5 Verify molecule-only training completes at least one smoke-test epoch and writes expected artifacts.
 
 ## 3. Graph-To-Molecule Decoding
 
@@ -38,12 +38,12 @@
 - [x] 5.2 Adapt the conditional GraphVAE training path to use the validated graph decoding and reporting pipeline.
 - [x] 5.3 Add disease-conditioned sampling for a requested disease vector.
 - [x] 5.4 Label random-vector conditional runs as smoke/plumbing runs in reports.
-- [ ] 5.5 Verify conditional training and sampling complete on a small drug-disease smoke dataset.
+- [x] 5.5 Verify conditional training and sampling complete on a small drug-disease smoke dataset.
 
 ## 6. Documentation And Verification
 
 - [x] 6.1 Update README guidance to distinguish smoke tests, molecule-only graph generation, and disease-conditioned proof-of-concept runs.
 - [x] 6.2 Document the single Colab Python command and the expected Google Drive results directory structure.
 - [x] 6.3 Document required data formats for molecule-only and drug-disease runs.
-- [ ] 6.4 Run local or Colab-equivalent smoke tests for setup, molecule-only training, decoding, evaluation, visualization, and conditional training.
+- [x] 6.4 Run local or Colab-equivalent smoke tests for setup, molecule-only training, decoding, evaluation, visualization, and conditional training.
 - [x] 6.5 Record known limitations and next steps, including future SELFIES/SMILES decoder comparison.
