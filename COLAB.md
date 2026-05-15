@@ -21,16 +21,33 @@ python scripts/run_full_pipeline.py \
   --drive-output-base /content/drive/MyDrive/panacea-runs
 ```
 
-Run a full configured pipeline after placing data in Drive or the repo:
+Run a full plumbing pipeline with public ChEMBL drug-indication data. If the CSVs are missing, they are downloaded from ChEMBL and saved in Google Drive before training starts:
 
 ```bash
 python scripts/run_full_pipeline.py \
   --mode full \
-  --molecule-csv data/samples/sample_molecules.csv \
-  --drug-disease-csv data/samples/sample_drug_disease_pairs.csv \
+  --molecule-csv /content/drive/MyDrive/panacea-data/molecules.csv \
+  --drug-disease-csv /content/drive/MyDrive/panacea-data/drug_disease_pairs.csv \
   --drive-output-base /content/drive/MyDrive/panacea-runs \
-  --allow-random-disease-vectors
+  --allow-random-disease-vectors \
+  --public-data-source chembl \
+  --public-data-max-records 2000
 ```
+
+For a run with your own hosted disease vectors, keep the public ChEMBL CSV download and add the vector path/URL:
+
+```bash
+python scripts/run_full_pipeline.py \
+  --mode full \
+  --molecule-csv /content/drive/MyDrive/panacea-data/molecules.csv \
+  --drug-disease-csv /content/drive/MyDrive/panacea-data/drug_disease_pairs.csv \
+  --disease-vector-path /content/drive/MyDrive/panacea-data/disease_vectors.pt \
+  --disease-vector-url https://example.com/disease_vectors.pt \
+  --public-data-source chembl \
+  --drive-output-base /content/drive/MyDrive/panacea-runs
+```
+
+Random disease vectors are still non-semantic. They validate plumbing only; meaningful disease-conditioned generation requires real disease vectors.
 
 Each run creates a new timestamped folder under the Drive output base. The run folder contains checkpoints, metrics, candidates, plots, configs, a report, and a manifest.
 

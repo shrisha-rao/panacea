@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import requests
 import torch
 import yaml
 from torch.utils.data import DataLoader, random_split
@@ -33,6 +34,7 @@ else:
 
 DEFAULT_SAMPLE_MOLECULES = 'data/samples/sample_molecules.csv'
 DEFAULT_SAMPLE_PAIRS = 'data/samples/sample_drug_disease_pairs.csv'
+CHEMBL_API_BASE = 'https://www.ebi.ac.uk/chembl/api/data'
 
 
 def load_yaml(path):
@@ -73,6 +75,134 @@ def validate_csv(path, required_columns):
     missing = [column for column in required_columns if column not in df.columns]
     if missing:
         raise ValueError(f"{path} is missing required columns: {missing}")
+
+
+def download_if_missing(path, url, label):
+    if not url or os.path.exists(path):
+        return
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Downloading {label} to {path}")
+    response = requests.get(url, stream=True, timeout=60)
+    response.raise_for_status()
+    with open(path, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                f.write(chunk)
+
+
+def chembl_get(endpoint, params):
+    response = requests.get(f'{CHEMBL_API_BASE}/{endpoint}.json', params=params, timeout=60)
+    response.raise_for_status()
+    return response.json()
+
+
+def iter_chunks(items, chunk_size):
+    for start in range(0, len(items), chunk_size):
+        yield items[start:start + chunk_size]
+
+
+def prepare_chembl_public_data(molecule_csv, drug_disease_csv, max_records=2000, min_phase=3.0):
+    print(f'Downloading public ChEMBL indications, max_records={max_records}, min_phase={min_phase}')
+    indication_rows = []
+    seen_pairs = set()
+    limit = 1000
+    offset = 0
+
+    while len(indication_rows) < max_records:
+        data = chembl_get('drug_indication', {
+            'limit': limit,
+            'offset': offset,
+            'max_phase_for_ind__gte': min_phase,
+        })
+        rows = data.get('drug_indications', [])
+        if not rows:
+            break
+
+        for row in rows:
+            molecule_id = row.get('parent_molecule_chembl_id') or row.get('molecule_chembl_id')
+            disease_id = row.get('mesh_id') or row.get('efo_id')
+            if not molecule_id or not disease_id:
+                continue
+            key = (molecule_id, disease_id)
+            if key in seen_pairs:
+                continue
+            seen_pairs.add(key)
+            indication_rows.append({
+                'molecule_chembl_id': molecule_id,
+                'disease_id': disease_id,
+                'disease_name': row.get('mesh_heading') or row.get('efo_term') or '',
+            })
+            if len(indication_rows) >= max_records:
+                break
+
+        page_meta = data.get('page_meta', {})
+        if not page_meta.get('next'):
+            break
+        offset += limit
+
+    if not indication_rows:
+        raise RuntimeError('No ChEMBL drug indication records were downloaded.')
+
+    molecule_ids = sorted({row['molecule_chembl_id'] for row in indication_rows})
+    molecule_by_id = {}
+    for chunk in iter_chunks(molecule_ids, 100):
+        data = chembl_get('molecule', {
+            'limit': len(chunk),
+            'molecule_chembl_id__in': ','.join(chunk),
+        })
+        for molecule in data.get('molecules', []):
+            structures = molecule.get('molecule_structures') or {}
+            smiles = structures.get('canonical_smiles')
+            if not smiles:
+                continue
+            molecule_by_id[molecule['molecule_chembl_id']] = {
+                'smiles': smiles,
+                'pref_name': molecule.get('pref_name') or '',
+            }
+
+    pair_records = []
+    for row in indication_rows:
+        molecule = molecule_by_id.get(row['molecule_chembl_id'])
+        if not molecule:
+            continue
+        pair_records.append({
+            'smiles': molecule['smiles'],
+            'disease_id': row['disease_id'],
+            'molecule_chembl_id': row['molecule_chembl_id'],
+            'disease_name': row['disease_name'],
+            'source': 'ChEMBL drug_indication',
+        })
+
+    if not pair_records:
+        raise RuntimeError('ChEMBL indications were downloaded, but none had canonical SMILES.')
+
+    pair_df = pd.DataFrame(pair_records).drop_duplicates(['smiles', 'disease_id'])
+    molecule_df = pair_df[['smiles', 'molecule_chembl_id']].drop_duplicates('smiles')
+    molecule_path = Path(molecule_csv)
+    pair_path = Path(drug_disease_csv)
+    molecule_path.parent.mkdir(parents=True, exist_ok=True)
+    pair_path.parent.mkdir(parents=True, exist_ok=True)
+    molecule_df.to_csv(molecule_path, index=False)
+    pair_df.to_csv(pair_path, index=False)
+    print(f'Saved {len(molecule_df)} public molecules to {molecule_path}')
+    print(f'Saved {len(pair_df)} public drug-disease pairs to {pair_path}')
+
+
+def prepare_public_data_if_missing(args, molecule_csv, drug_disease_csv):
+    if args.public_data_source == 'none' or args.mode == 'smoke':
+        return
+    if os.path.exists(molecule_csv) and os.path.exists(drug_disease_csv):
+        return
+    if args.molecule_csv_url or args.drug_disease_csv_url:
+        return
+    if args.public_data_source == 'chembl':
+        prepare_chembl_public_data(
+            molecule_csv,
+            drug_disease_csv,
+            max_records=args.public_data_max_records,
+            min_phase=args.public_data_min_phase,
+        )
 
 
 def collate_examples(batch):
@@ -356,6 +486,12 @@ def main():
     parser.add_argument('--molecule-csv', default=None)
     parser.add_argument('--drug-disease-csv', default=None)
     parser.add_argument('--disease-vector-path', default=None)
+    parser.add_argument('--molecule-csv-url', default=None)
+    parser.add_argument('--drug-disease-csv-url', default=None)
+    parser.add_argument('--disease-vector-url', default=None)
+    parser.add_argument('--public-data-source', choices=['chembl', 'none'], default='chembl')
+    parser.add_argument('--public-data-max-records', type=int, default=2000)
+    parser.add_argument('--public-data-min-phase', type=float, default=3.0)
     parser.add_argument('--allow-random-disease-vectors', action='store_true')
     parser.add_argument('--molecule-objective', choices=['vae', 'ae'], default='vae')
     parser.add_argument('--target-disease-id', default=None)
@@ -374,6 +510,10 @@ def main():
     run_dir = create_run_dir(args.drive_output_base, args.mode)
     copy_configs(run_dir)
     print(f"Run directory: {run_dir}")
+
+    download_if_missing(molecule_csv, args.molecule_csv_url, 'molecule CSV')
+    download_if_missing(drug_disease_csv, args.drug_disease_csv_url, 'drug-disease CSV')
+    prepare_public_data_if_missing(args, molecule_csv, drug_disease_csv)
 
     validate_csv(molecule_csv, ['smiles'])
     validate_csv(drug_disease_csv, [data_config.get('smiles_column', 'smiles'), data_config.get('disease_id_column', 'disease_id')])
@@ -427,6 +567,7 @@ def main():
         )
         limitations.append('Conditional stage used random disease vectors and does not prove disease relevance.')
     else:
+        download_if_missing(disease_vector_path, args.disease_vector_url, 'disease vector file')
         disease_vectors = load_disease_vectors(disease_vector_path)
 
     conditional_dataset = DrugDiseaseInMemoryDataset(

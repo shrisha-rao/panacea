@@ -151,7 +151,7 @@ python scripts/run_full_pipeline.py \
   --drive-output-base /content/drive/MyDrive/panacea-runs
 ```
 
-Run a configured proof-of-concept pipeline:
+Run a configured proof-of-concept pipeline with local or Drive-hosted data:
 
 ```bash
 python scripts/run_full_pipeline.py \
@@ -160,6 +160,19 @@ python scripts/run_full_pipeline.py \
   --drug-disease-csv data/raw/drug_disease_pairs.csv \
   --disease-vector-path data/processed/disease_vectors.pt \
   --drive-output-base /content/drive/MyDrive/panacea-runs
+```
+
+For Colab plumbing runs, the runner can download public ChEMBL drug-indication data if the CSVs are missing. Save the downloaded data and run outputs to Google Drive so they survive runtime resets:
+
+```bash
+python scripts/run_full_pipeline.py \
+  --mode full \
+  --molecule-csv /content/drive/MyDrive/panacea-data/molecules.csv \
+  --drug-disease-csv /content/drive/MyDrive/panacea-data/drug_disease_pairs.csv \
+  --drive-output-base /content/drive/MyDrive/panacea-runs \
+  --allow-random-disease-vectors \
+  --public-data-source chembl \
+  --public-data-max-records 2000
 ```
 
 Each run creates a new timestamped Google Drive folder, for example:
